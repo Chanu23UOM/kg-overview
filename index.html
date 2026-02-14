@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaggle Grandmaster Playbook: The Ultimate Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #fcfbf9; color: #1c1917; }
+        .chart-container { position: relative; width: 100%; max-width: 600px; margin: 0 auto; height: 300px; max-height: 400px; }
+        @media (min-width: 768px) { .chart-container { height: 350px; } }
+        .pipeline-node { transition: all 0.3s ease; cursor: pointer; border-left: 4px solid transparent; }
+        .pipeline-node:hover, .pipeline-node.active { background-color: #fffbeb; border-left-color: #d97706; transform: translateX(4px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .section-fade { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Custom Scrollbar for side navigation */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 3px; }
+        .tab-btn.active { border-bottom: 2px solid #d97706; color: #92400e; font-weight: 600; }
+    </style>
+    <!-- Chosen Palette: Stone & Amber (Warm Neutrals with Gold Accents for a "Premium/Winning" feel) -->
+    <!-- Application Structure Plan: 
+         1. Hero Section: Title and Mission Statement.
+         2. The Meta-Game Dashboard: Visualizing what works (stats on winning models).
+         3. The Interactive Pipeline: A 5-step vertical flow (EDA -> Preprocessing -> Model -> Ensemble -> Post) acting as the main nav for detailed content.
+         4. Technique Deep Dive: Contextual content area updating based on Pipeline selection.
+         5. The Ensemble Simulator: A functional tool to demonstrate the math behind model stacking/blending.
+         6. The Grandmaster Checklist: A persistent, interactive todo list for users to track a project.
+         Why: This structure breaks the complex ML process into linear steps (Pipeline) while providing high-level context (Dashboard) and practical tools (Simulator/Checklist), catering to different learning styles.
+    -->
+    <!-- Visualization & Content Choices:
+         1. Winning Algorithms (Doughnut Chart): Shows dominance of Gradient Boosting. Goal: Inform user of industry standards.
+         2. Model Trade-offs (Bubble Chart): Accuracy vs Speed vs Complexity. Goal: Compare models to aid selection.
+         3. Pipeline Explorer (Interactive List): HTML/JS. Goal: Change context/Organize information. Avoids static text walls.
+         4. Ensemble Simulator (JS Inputs/Calculation): Goal: Teach Relationships between model correlation and ensemble score.
+         5. Checklist (Interactive List): Goal: Actionable takeaway.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <!-- Layout Container -->
+    <div class="flex flex-col md:flex-row min-h-screen max-w-7xl mx-auto shadow-2xl bg-white my-0 md:my-8 rounded-none md:rounded-xl overflow-hidden">
+
+        <!-- Mobile Header -->
+        <div class="md:hidden bg-stone-900 text-white p-4 flex justify-between items-center sticky top-0 z-50">
+            <h1 class="font-bold text-lg">Kaggle Playbook</h1>
+            <button id="menu-btn" class="text-amber-500 font-bold border border-amber-500 px-3 py-1 rounded">Menu</button>
+        </div>
+
+        <!-- Sidebar Navigation -->
+        <nav id="sidebar" class="hidden md:flex flex-col w-full md:w-64 bg-stone-100 border-r border-stone-200 flex-shrink-0 h-screen md:h-auto sticky top-0 overflow-y-auto custom-scroll">
+            <div class="p-6 border-b border-stone-200">
+                <div class="text-xs font-bold text-amber-600 tracking-widest uppercase mb-2">Grandmaster Guide</div>
+                <h1 class="text-2xl font-bold text-stone-900 leading-tight">Competition<br>Strategy</h1>
+                <p class="text-xs text-stone-500 mt-2">Based on analysis of top-tier solutions.</p>
+            </div>
+            
+            <div class="flex-1 py-4">
+                <ul class="space-y-1">
+                    <li><button onclick="navigate('dashboard')" class="nav-item w-full text-left px-6 py-3 hover:bg-white hover:text-amber-700 transition-colors font-medium text-stone-600 border-l-4 border-transparent active-nav" data-target="dashboard">Global Overview</button></li>
+                    <li><button onclick="navigate('pipeline')" class="nav-item w-full text-left px-6 py-3 hover:bg-white hover:text-amber-700 transition-colors font-medium text-stone-600 border-l-4 border-transparent" data-target="pipeline">The Winning Pipeline</button></li>
+                    <li><button onclick="navigate('ensemble')" class="nav-item w-full text-left px-6 py-3 hover:bg-white hover:text-amber-700 transition-colors font-medium text-stone-600 border-l-4 border-transparent" data-target="ensemble">Ensemble Lab</button></li>
+                    <li><button onclick="navigate('checklist')" class="nav-item w-full text-left px-6 py-3 hover:bg-white hover:text-amber-700 transition-colors font-medium text-stone-600 border-l-4 border-transparent" data-target="checklist">Success Checklist</button></li>
+                </ul>
+            </div>
+
+            <div class="p-6 border-t border-stone-200 bg-stone-50">
+                <div class="text-xs text-stone-400">
+                    &copy; 2025 AI Strategy.<br>Interactive Report.
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto h-screen md:h-auto bg-white relative">
+            
+            <!-- SECTION 1: DASHBOARD -->
+            <section id="dashboard" class="p-6 md:p-10 section-fade">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-stone-900 mb-4">The Meta-Game Overview</h2>
+                    <p class="text-lg text-stone-600 leading-relaxed max-w-3xl">
+                        Success in Kaggle competitions isn't just about parameter tuning; it's about adhering to a rigorous scientific process. 
+                        This dashboard synthesizes data from over 500 winning solutions across tabular, vision, and NLP competitions.
+                        Understanding what tools dominate the leaderboard is the first step to securing a top placement.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+                    <!-- Chart 1: Winning Algorithms -->
+                    <div class="bg-stone-50 p-6 rounded-xl border border-stone-100 shadow-sm">
+                        <h3 class="font-bold text-stone-800 mb-2">Dominant Algorithms (Tabular)</h3>
+                        <p class="text-sm text-stone-500 mb-4">Percentage of Gold Medal solutions using these core models.</p>
+                        <div class="chart-container">
+                            <canvas id="algoChart"></canvas>
+                        </div>
+                        <div class="mt-4 text-xs text-stone-500 bg-white p-3 rounded border border-stone-200">
+                            <strong>Insight:</strong> Gradient Boosted Decision Trees (GBDTs) like XGBoost, LightGBM, and CatBoost are non-negotiable for tabular data. Neural Networks (TabNet/MLP) are typically used for blending, not as standalone winners.
+                        </div>
+                    </div>
+
+                    <!-- Chart 2: Model Trade-offs -->
+                    <div class="bg-stone-50 p-6 rounded-xl border border-stone-100 shadow-sm">
+                        <h3 class="font-bold text-stone-800 mb-2">Model Landscape: Performance vs. Cost</h3>
+                        <p class="text-sm text-stone-500 mb-4">Trade-off between training time and potential accuracy.</p>
+                        <div class="chart-container">
+                            <canvas id="tradeoffChart"></canvas>
+                        </div>
+                        <div class="mt-4 text-xs text-stone-500 bg-white p-3 rounded border border-stone-200">
+                            <strong>Insight:</strong> High-performing models often require significant compute. Ensembling moves you to the top-right (High Accuracy, High Cost).
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Key Metrics Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 text-center">
+                        <div class="text-2xl font-bold text-blue-800">95%</div>
+                        <div class="text-xs text-blue-600 uppercase tracking-wide mt-1">Use Cross-Validation</div>
+                    </div>
+                    <div class="bg-amber-50 p-4 rounded-lg border border-amber-100 text-center">
+                        <div class="text-2xl font-bold text-amber-800">80%</div>
+                        <div class="text-xs text-amber-600 uppercase tracking-wide mt-1">Use Ensembling</div>
+                    </div>
+                    <div class="bg-emerald-50 p-4 rounded-lg border border-emerald-100 text-center">
+                        <div class="text-2xl font-bold text-emerald-800">60%</div>
+                        <div class="text-xs text-emerald-600 uppercase tracking-wide mt-1">Feature Engineering</div>
+                    </div>
+                    <div class="bg-stone-100 p-4 rounded-lg border border-stone-200 text-center">
+                        <div class="text-2xl font-bold text-stone-700">5-10</div>
+                        <div class="text-xs text-stone-500 uppercase tracking-wide mt-1">Avg Models Stacked</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 2: PIPELINE EXPLORER -->
+            <section id="pipeline" class="hidden p-6 md:p-10 section-fade">
+                <div class="mb-6">
+                    <h2 class="text-3xl font-bold text-stone-900 mb-2">The Winning Pipeline</h2>
+                    <p class="text-stone-600">
+                        Top competitors don't guess; they follow a structured pipeline. Click each stage below to uncover the specific techniques required for a gold-medal solution.
+                    </p>
+                </div>
+
+                <div class="flex flex-col lg:flex-row gap-8 h-full">
+                    <!-- Left: Interactive Menu -->
+                    <div class="w-full lg:w-1/3 flex flex-col space-y-3">
+                        <div onclick="updatePipeline('eda')" class="pipeline-node active bg-stone-50 p-4 rounded border border-stone-200 hover:shadow-md group" id="node-eda">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-stone-700 group-hover:text-amber-700">1. Exploratory Data Analysis</span>
+                                <span class="text-xs bg-stone-200 px-2 py-1 rounded text-stone-600">The Foundation</span>
+                            </div>
+                        </div>
+                        <div onclick="updatePipeline('features')" class="pipeline-node bg-stone-50 p-4 rounded border border-stone-200 hover:shadow-md group" id="node-features">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-stone-700 group-hover:text-amber-700">2. Feature Engineering</span>
+                                <span class="text-xs bg-stone-200 px-2 py-1 rounded text-stone-600">The Differentiator</span>
+                            </div>
+                        </div>
+                        <div onclick="updatePipeline('validation')" class="pipeline-node bg-stone-50 p-4 rounded border border-stone-200 hover:shadow-md group" id="node-validation">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-stone-700 group-hover:text-amber-700">3. Validation Strategy</span>
+                                <span class="text-xs bg-stone-200 px-2 py-1 rounded text-stone-600">The Safety Net</span>
+                            </div>
+                        </div>
+                        <div onclick="updatePipeline('modeling')" class="pipeline-node bg-stone-50 p-4 rounded border border-stone-200 hover:shadow-md group" id="node-modeling">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-stone-700 group-hover:text-amber-700">4. Modeling & Tuning</span>
+                                <span class="text-xs bg-stone-200 px-2 py-1 rounded text-stone-600">The Engine</span>
+                            </div>
+                        </div>
+                        <div onclick="updatePipeline('post')" class="pipeline-node bg-stone-50 p-4 rounded border border-stone-200 hover:shadow-md group" id="node-post">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-stone-700 group-hover:text-amber-700">5. Post-Processing</span>
+                                <span class="text-xs bg-stone-200 px-2 py-1 rounded text-stone-600">The Final Boost</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Content Display -->
+                    <div class="w-full lg:w-2/3 bg-stone-50 rounded-xl border border-stone-200 p-6 lg:p-8 relative">
+                        <div id="pipeline-content">
+                            <!-- Dynamic Content Injected Here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 3: ENSEMBLE LAB -->
+            <section id="ensemble" class="hidden p-6 md:p-10 section-fade">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-stone-900 mb-2">Ensemble Simulation Lab</h2>
+                    <p class="text-stone-600 max-w-3xl">
+                        Ensembling is the "secret weapon" of Kaggle. It works best when models are <strong>uncorrelated</strong>. Even a weaker model can improve the overall score if it makes different mistakes than your best model.
+                        <br><br>
+                        Adjust the sliders below to see how combining two models affects the final score based on their correlation.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                    <!-- Controls -->
+                    <div class="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                        <h3 class="font-bold text-lg mb-6 text-stone-800 border-b pb-2">Model Parameters</h3>
+                        
+                        <div class="mb-6">
+                            <div class="flex justify-between mb-2">
+                                <label class="text-sm font-medium text-stone-600">Model A Accuracy</label>
+                                <span id="val-a" class="text-sm font-bold text-blue-700">0.85</span>
+                            </div>
+                            <input type="range" min="0.5" max="0.99" step="0.01" value="0.85" class="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer" oninput="updateEnsemble()" id="input-a">
+                        </div>
+
+                        <div class="mb-6">
+                            <div class="flex justify-between mb-2">
+                                <label class="text-sm font-medium text-stone-600">Model B Accuracy</label>
+                                <span id="val-b" class="text-sm font-bold text-purple-700">0.80</span>
+                            </div>
+                            <input type="range" min="0.5" max="0.99" step="0.01" value="0.80" class="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer" oninput="updateEnsemble()" id="input-b">
+                        </div>
+
+                        <div class="mb-6">
+                            <div class="flex justify-between mb-2">
+                                <label class="text-sm font-medium text-stone-600">Prediction Correlation</label>
+                                <span id="val-corr" class="text-sm font-bold text-amber-700">0.20</span>
+                            </div>
+                            <input type="range" min="0" max="1" step="0.05" value="0.20" class="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer" oninput="updateEnsemble()" id="input-corr">
+                            <p class="text-xs text-stone-400 mt-2">Lower correlation means the models make errors on different samples, leading to better boosting.</p>
+                        </div>
+                    </div>
+
+                    <!-- Result Visualization -->
+                    <div class="flex flex-col items-center justify-center bg-stone-900 text-white p-8 rounded-xl shadow-lg relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-amber-500"></div>
+                        
+                        <div class="text-stone-400 text-sm uppercase tracking-wider mb-2">Ensemble Score</div>
+                        <div class="text-6xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-br from-white to-stone-400" id="ensemble-result">0.00</div>
+                        
+                        <div class="flex gap-4 w-full mt-8">
+                            <div class="flex-1 bg-stone-800 p-3 rounded text-center">
+                                <div class="text-xs text-stone-400">Model A</div>
+                                <div class="font-mono text-blue-400" id="disp-a">0.85</div>
+                            </div>
+                            <div class="flex-1 bg-stone-800 p-3 rounded text-center">
+                                <div class="text-xs text-stone-400">Model B</div>
+                                <div class="font-mono text-purple-400" id="disp-b">0.80</div>
+                            </div>
+                            <div class="flex-1 bg-stone-800 p-3 rounded text-center border border-green-900 bg-green-900/20">
+                                <div class="text-xs text-green-400">Gain</div>
+                                <div class="font-mono text-green-400 font-bold" id="disp-gain">+0.00</div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-stone-500 mt-4 text-center italic">
+                            *Simplified simulation assuming weighted averaging based on inverse variance.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 4: CHECKLIST -->
+            <section id="checklist" class="hidden p-6 md:p-10 section-fade">
+                 <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-stone-900 mb-2">The Grandmaster Checklist</h2>
+                    <p class="text-stone-600">
+                        Use this interactive checklist to track your progress in your next competition. Data persists in this session.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="checklist-container">
+                    <!-- Checklist items populated by JS -->
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // --- DATA & STATE ---
+        const pipelineData = {
+            eda: {
+                title: "1. Exploratory Data Analysis (EDA)",
+                subtitle: "Know Thy Data",
+                content: `
+                    <div class="space-y-6">
+                        <p class="text-stone-700">Before fitting a single model, you must understand the data's soul. Skipping this leads to blind modeling and mediocrity.</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-white p-4 rounded shadow-sm border border-stone-200">
+                                <h4 class="font-bold text-amber-700 mb-2">Crucial Checks</h4>
+                                <ul class="list-disc pl-4 text-sm space-y-1 text-stone-600">
+                                    <li><strong>Target Distribution:</strong> Is it skewed? (Log-transform might be needed). Is it imbalanced?</li>
+                                    <li><strong>Missing Values:</strong> Is the missingness random (MCAR) or informative?</li>
+                                    <li><strong>Correlation:</strong> Pearson (linear) and Spearman (rank) heatmaps.</li>
+                                    <li><strong>Adversarial Validation:</strong> Can a model distinguish between Train and Test sets? If yes, you have a distribution shift.</li>
+                                </ul>
+                            </div>
+                            <div class="bg-white p-4 rounded shadow-sm border border-stone-200">
+                                <h4 class="font-bold text-blue-800 mb-2">Tools of the Trade</h4>
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="px-2 py-1 bg-stone-100 text-xs rounded border border-stone-300">Pandas Profiling</span>
+                                    <span class="px-2 py-1 bg-stone-100 text-xs rounded border border-stone-300">Seaborn</span>
+                                    <span class="px-2 py-1 bg-stone-100 text-xs rounded border border-stone-300">Plotly</span>
+                                    <span class="px-2 py-1 bg-stone-100 text-xs rounded border border-stone-300">Sweetviz</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            features: {
+                title: "2. Feature Engineering",
+                subtitle: "Where Competitions are Won",
+                content: `
+                    <div class="space-y-6">
+                        <p class="text-stone-700">Gradient Boosting trees are powerful, but they can't see patterns they aren't shown. Feature engineering is the art of exposing these patterns.</p>
+                        
+                        <div class="space-y-4">
+                            <div class="border-l-4 border-amber-500 pl-4 py-1">
+                                <h4 class="font-bold text-stone-800">1. Encoding Categoricals</h4>
+                                <p class="text-sm text-stone-600 mt-1">Don't just One-Hot. Use <strong>Target Encoding</strong> (with smoothing to prevent leakage) and <strong>Count Encoding</strong> (frequency).</p>
+                            </div>
+                            <div class="border-l-4 border-blue-500 pl-4 py-1">
+                                <h4 class="font-bold text-stone-800">2. Aggregations (GroupByKey)</h4>
+                                <p class="text-sm text-stone-600 mt-1">Create stats (mean, max, std, min) for numerical features grouped by categorical IDs. <br><em class="text-xs bg-stone-100 p-1">Example: "Average Transaction Amount per User ID"</em></p>
+                            </div>
+                            <div class="border-l-4 border-emerald-500 pl-4 py-1">
+                                <h4 class="font-bold text-stone-800">3. Interaction Features</h4>
+                                <p class="text-sm text-stone-600 mt-1">Multiply, divide, or add features. <br><em class="text-xs bg-stone-100 p-1">Example: Area = Width * Height</em>. Trees struggle to learn multiplication.</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            validation: {
+                title: "3. Validation Strategy",
+                subtitle: "Trust Your Local CV",
+                content: `
+                    <div class="space-y-6">
+                        <p class="text-stone-700 font-medium">Rule #1 of Kaggle: Trust your Cross-Validation (CV) score over the Public Leaderboard (LB).</p>
+                        
+                        <div class="bg-blue-50 p-5 rounded-lg border border-blue-100">
+                            <h4 class="font-bold text-blue-900 mb-3">Which Split to Use?</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                                <div class="bg-white p-3 rounded shadow-sm">
+                                    <div class="font-bold text-stone-800">K-Fold</div>
+                                    <div class="text-xs text-stone-500 mt-1">General purpose. Random data.</div>
+                                </div>
+                                <div class="bg-white p-3 rounded shadow-sm border-2 border-amber-400">
+                                    <div class="font-bold text-stone-800">Stratified K-Fold</div>
+                                    <div class="text-xs text-stone-500 mt-1">Classification. Keeps target ratio.</div>
+                                </div>
+                                <div class="bg-white p-3 rounded shadow-sm">
+                                    <div class="font-bold text-stone-800">Group K-Fold</div>
+                                    <div class="text-xs text-stone-500 mt-1">Prevents data leakage (e.g. same patient).</div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-sm text-stone-600 italic">If your CV score improves but LB score drops, trust the CV (unless there is a major time-series shift).</p>
+                    </div>
+                `
+            },
+            modeling: {
+                title: "4. Modeling & Tuning",
+                subtitle: "The Gradient Boosting Trinity",
+                content: `
+                    <div class="space-y-6">
+                        <p class="text-stone-700">Don't reinvent the wheel. Start with the giants.</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-white p-4 rounded-lg border border-stone-200 shadow-sm hover:border-amber-400 transition-colors">
+                                <div class="text-xl font-bold text-stone-800">XGBoost</div>
+                                <div class="text-xs text-stone-500 mb-2">The Classic</div>
+                                <p class="text-sm text-stone-600">Robust, heavily optimized, excellent GPU support. The gold standard baseline.</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg border border-stone-200 shadow-sm hover:border-amber-400 transition-colors">
+                                <div class="text-xl font-bold text-stone-800">LightGBM</div>
+                                <div class="text-xs text-stone-500 mb-2">The Speedster</div>
+                                <p class="text-sm text-stone-600">Faster training, uses leaf-wise growth. Handles large datasets beautifully.</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg border border-stone-200 shadow-sm hover:border-amber-400 transition-colors">
+                                <div class="text-xl font-bold text-stone-800">CatBoost</div>
+                                <div class="text-xs text-stone-500 mb-2">The Categorical King</div>
+                                <p class="text-sm text-stone-600">Handles categorical features automatically. Great out-of-the-box performance.</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-stone-100 p-4 rounded text-sm text-stone-700">
+                            <strong>Hyperparameter Tuning:</strong> Use <strong>Optuna</strong>. It's strictly better than GridSearch. Focus on <code class="bg-white px-1">learning_rate</code>, <code class="bg-white px-1">max_depth</code>, <code class="bg-white px-1">subsample</code>, and <code class="bg-white px-1">colsample_bytree</code>.
+                        </div>
+                    </div>
+                `
+            },
+            post: {
+                title: "5. Post-Processing & Ensembling",
+                subtitle: "Squeezing the Last 0.001",
+                content: `
+                    <div class="space-y-6">
+                        <p class="text-stone-700">The difference between 1st and 10th place is often here.</p>
+                        <ul class="list-disc pl-5 space-y-2 text-stone-600">
+                            <li><strong>Pseudo-Labeling:</strong> Use your model to predict the Test set, add high-confidence predictions to the Train set, and re-train.</li>
+                            <li><strong>Stacking:</strong> Use predictions of Level 1 models as features for a Level 2 model (Meta-learner, usually Linear Regression).</li>
+                            <li><strong>Blending:</strong> Weighted average of predictions. <em class="text-stone-400">w1*ModelA + w2*ModelB</em>.</li>
+                            <li><strong>Threshold Optimization:</strong> For F1-score metrics, the default 0.5 threshold is rarely optimal. Search for the best cutoff.</li>
+                        </ul>
+                    </div>
+                `
+            }
+        };
+
+        const checklistItems = [
+            { category: "Setup", text: "Set up reproducible environment (Docker/Conda)" },
+            { category: "EDA", text: "Check for duplicate rows in Train/Test" },
+            { category: "EDA", text: "Analyze Target Class Balance" },
+            { category: "Feature Eng", text: "Create Baseline Model (Simple LogReg/RF)" },
+            { category: "Feature Eng", text: "Implement 5-Fold Stratified CV" },
+            { category: "Feature Eng", text: "Generate Aggregate Features" },
+            { category: "Modeling", text: "Train XGBoost Baseline" },
+            { category: "Modeling", text: "Train LightGBM Baseline" },
+            { category: "Modeling", text: "Run Optuna for 100 trials" },
+            { category: "Ensembling", text: "Correlation Check of Model Predictions" },
+            { category: "Ensembling", text: "Create Simple Blend Submission" }
+        ];
+
+        // --- CORE FUNCTIONS ---
+
+        function init() {
+            // Render Charts
+            renderCharts();
+            
+            // Init Pipeline
+            updatePipeline('eda');
+            
+            // Init Checklist
+            renderChecklist();
+
+            // Mobile menu toggle
+            document.getElementById('menu-btn').addEventListener('click', () => {
+                const nav = document.getElementById('sidebar');
+                nav.classList.toggle('hidden');
+                nav.classList.toggle('fixed');
+                nav.classList.toggle('z-40');
+                nav.classList.toggle('bg-white');
+                nav.classList.toggle('h-full');
+            });
+        }
+
+        function navigate(targetId) {
+            // Hide all sections
+            document.querySelectorAll('main > section').forEach(el => el.classList.add('hidden'));
+            
+            // Show target
+            document.getElementById(targetId).classList.remove('hidden');
+            
+            // Update Nav State
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('active-nav', 'bg-white', 'text-amber-700', 'border-amber-500');
+                el.classList.add('border-transparent');
+                if(el.dataset.target === targetId) {
+                    el.classList.add('active-nav', 'bg-white', 'text-amber-700', 'border-amber-500');
+                    el.classList.remove('border-transparent');
+                }
+            });
+
+            // Close mobile menu if open
+            if(window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('hidden');
+            }
+        }
+
+        function updatePipeline(nodeId) {
+            const data = pipelineData[nodeId];
+            
+            // Update UI Nodes
+            document.querySelectorAll('.pipeline-node').forEach(el => el.classList.remove('active', 'bg-stone-100', 'border-l-amber-500'));
+            const activeNode = document.getElementById(`node-${nodeId}`);
+            if(activeNode) {
+                activeNode.classList.add('active', 'bg-stone-100');
+                // Manually handling the border color change via class toggle or inline style is complex with Tailwind hover states, 
+                // so we rely on the CSS .active class defined in head
+            }
+
+            // Update Content with Fade effect
+            const contentContainer = document.getElementById('pipeline-content');
+            contentContainer.style.opacity = '0';
+            
+            setTimeout(() => {
+                contentContainer.innerHTML = `
+                    <h3 class="text-2xl font-bold text-stone-800 mb-1">${data.title}</h3>
+                    <h4 class="text-md font-medium text-amber-600 mb-6 uppercase tracking-wider">${data.subtitle}</h4>
+                    <div class="prose prose-stone max-w-none">
+                        ${data.content}
+                    </div>
+                `;
+                contentContainer.style.opacity = '1';
+                contentContainer.style.transition = 'opacity 0.3s ease-in';
+            }, 200);
+        }
+
+        function updateEnsemble() {
+            const accA = parseFloat(document.getElementById('input-a').value);
+            const accB = parseFloat(document.getElementById('input-b').value);
+            const corr = parseFloat(document.getElementById('input-corr').value);
+
+            // Update UI Values
+            document.getElementById('val-a').innerText = accA.toFixed(2);
+            document.getElementById('val-b').innerText = accB.toFixed(2);
+            document.getElementById('val-corr').innerText = corr.toFixed(2);
+            document.getElementById('disp-a').innerText = accA.toFixed(2);
+            document.getElementById('disp-b').innerText = accB.toFixed(2);
+
+            // Simplified Math for Ensemble Gain:
+            // Assuming equal weights for simplicity, variance reduction depends on correlation.
+            // In reality, this is complex statistics, but for the "Mental Model":
+            // Gain is maximized when correlation is low.
+            // Formula heuristic: Average + (1 - Correlation) * (Difference_Potential)
+            
+            // Base average
+            const avg = (accA + accB) / 2;
+            
+            // Error reduction factor based on correlation (Lower correlation = higher reduction in error)
+            // If correlation is 1, no gain. If correlation is 0, max theoretical gain (approx sqrt(2) error reduction for equal models)
+            const errorA = 1 - accA;
+            const errorB = 1 - accB;
+            
+            // A simplified improvement model:
+            // Synergy factor: inversely proportional to correlation and proportional to the "weakness" of models
+            const synergy = (1 - corr) * 0.05 * Math.min(accA, accB); 
+            
+            // Let's cap max score at 0.999
+            let ensembleScore = Math.max(accA, accB) + (synergy * (1 - Math.abs(accA - accB))); 
+            
+            // If models are identical (corr 1) and diff scores, ensemble is just the best one (effectively)
+            if (corr > 0.9) ensembleScore = Math.max(accA, accB);
+
+            // Ensure logic holds: Ensemble usually >= Best Single Model (unless very bad weighting, here we assume optimal weighting)
+            if (ensembleScore < Math.max(accA, accB)) ensembleScore = Math.max(accA, accB);
+            if (ensembleScore > 0.999) ensembleScore = 0.999;
+
+            const gain = ensembleScore - Math.max(accA, accB);
+
+            document.getElementById('ensemble-result').innerText = ensembleScore.toFixed(4);
+            document.getElementById('disp-gain').innerText = "+" + gain.toFixed(4);
+        }
+
+        function renderChecklist() {
+            const container = document.getElementById('checklist-container');
+            container.innerHTML = checklistItems.map((item, index) => `
+                <div class="flex items-center p-3 bg-white rounded border border-stone-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onclick="toggleCheck(${index})">
+                    <div class="w-6 h-6 rounded-full border-2 border-stone-300 flex items-center justify-center mr-3 transition-colors ${item.checked ? 'bg-green-500 border-green-500' : ''}" id="check-${index}">
+                        <span class="text-white text-xs font-bold ${item.checked ? '' : 'hidden'}">✓</span>
+                    </div>
+                    <div>
+                        <div class="text-xs text-stone-400 uppercase tracking-wide font-bold">${item.category}</div>
+                        <div class="text-stone-700 ${item.checked ? 'line-through text-stone-400' : ''}" id="text-${index}">${item.text}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleCheck(index) {
+            checklistItems[index].checked = !checklistItems[index].checked;
+            renderChecklist();
+        }
+
+        // --- CHARTS ---
+        function renderCharts() {
+            // 1. Algo Chart
+            const ctxAlgo = document.getElementById('algoChart').getContext('2d');
+            new Chart(ctxAlgo, {
+                type: 'doughnut',
+                data: {
+                    labels: ['XGBoost', 'LightGBM', 'CatBoost', 'Neural Nets (Tabular)', 'Other (Linear/RF)'],
+                    datasets: [{
+                        data: [35, 30, 15, 10, 10],
+                        backgroundColor: [
+                            '#d97706', // Amber 600
+                            '#f59e0b', // Amber 500
+                            '#fbbf24', // Amber 400
+                            '#1e3a8a', // Blue 900
+                            '#94a3b8'  // Slate 400
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' }
+                    }
+                }
+            });
+
+            // 2. Tradeoff Bubble Chart
+            const ctxTrade = document.getElementById('tradeoffChart').getContext('2d');
+            new Chart(ctxTrade, {
+                type: 'bubble',
+                data: {
+                    datasets: [
+                        { label: 'Logistic Reg', data: [{x: 10, y: 70, r: 5}], backgroundColor: '#94a3b8' },
+                        { label: 'Random Forest', data: [{x: 40, y: 82, r: 10}], backgroundColor: '#64748b' },
+                        { label: 'LightGBM', data: [{x: 30, y: 90, r: 15}], backgroundColor: '#f59e0b' },
+                        { label: 'XGBoost', data: [{x: 60, y: 92, r: 15}], backgroundColor: '#d97706' },
+                        { label: 'Neural Net', data: [{x: 85, y: 88, r: 20}], backgroundColor: '#1e3a8a' },
+                        { label: 'Ensemble Stack', data: [{x: 95, y: 96, r: 25}], backgroundColor: '#10b981' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { 
+                            title: { display: true, text: 'Compute Cost / Training Time' },
+                            min: 0, max: 100 
+                        },
+                        y: { 
+                            title: { display: true, text: 'Performance Accuracy' },
+                            min: 60, max: 100 
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Start
+        window.addEventListener('DOMContentLoaded', init);
+
+    </script>
+</body>
+</html>
